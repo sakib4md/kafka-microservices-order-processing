@@ -38,6 +38,10 @@ public class OrderCreatedConsumer {
                 + event.getOrderId());
 
         // Payment simulation
+        if (event.getAmount() == 55555.0) {
+            System.out.println("TEST FAILURE - triggering Kafka retry");
+            throw new RuntimeException("TEST RETRY");
+        }
         boolean paymentSuccess = event.getAmount() < 60000;
 
         String paymentId = "PAY-" + UUID.randomUUID();
