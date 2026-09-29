@@ -1,4 +1,4 @@
-package com.example.payment_service.dto;
+package com.example.notification_service.dto;
 
 public class OrderCreatedEvent {
 
@@ -7,7 +7,6 @@ public class OrderCreatedEvent {
     private Long orderId;
     private Long customerId;
     private Double amount;
-    private String deliveryAddress;
 
     public OrderCreatedEvent() {
     }
@@ -50,13 +49,5 @@ public class OrderCreatedEvent {
 
     public void setAmount(Double amount) {
         this.amount = amount;
-    }
-
-    public String getDeliveryAddress() {
-        return deliveryAddress;
-    }
-
-    public void setDeliveryAddress(String deliveryAddress) {
-        this.deliveryAddress = deliveryAddress;
     }
 }

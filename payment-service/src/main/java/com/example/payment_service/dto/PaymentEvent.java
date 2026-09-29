@@ -2,11 +2,13 @@ package com.example.payment_service.dto;
 
 public class PaymentEvent {
 
-    private Long eventId;
+    private String  eventId;
     private String eventType;
     private Long orderId;
     private Long customerId;
     private Double amount;
+    private String deliveryAddress;
+    private String eventTime;
     private String paymentId;
     private String paymentMethod;
     private String paymentStatus;
@@ -16,11 +18,13 @@ public class PaymentEvent {
     }
 
     public PaymentEvent(
-            Long eventId,
+            String  eventId,
             String eventType,
             Long orderId,
             Long customerId,
             Double amount,
+            String deliveryAddress,
+            String eventTime,
             String paymentId,
             String paymentMethod,
             String paymentStatus,
@@ -31,13 +35,15 @@ public class PaymentEvent {
         this.orderId = orderId;
         this.customerId = customerId;
         this.amount = amount;
+        this.deliveryAddress = deliveryAddress;
+        this.eventTime = eventTime;
         this.paymentId = paymentId;
         this.paymentMethod = paymentMethod;
         this.paymentStatus = paymentStatus;
         this.reason = reason;
     }
 
-    public Long getEventId() {
+    public String  getEventId() {
         return eventId;
     }
 
@@ -55,6 +61,14 @@ public class PaymentEvent {
 
     public Double getAmount() {
         return amount;
+    }
+
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public String getEventTime() {
+        return eventTime;
     }
 
     public String getPaymentId() {

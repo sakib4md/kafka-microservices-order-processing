@@ -2,72 +2,26 @@
 
 A Java 17 / Spring Boot microservices demo. Orders are saved by the Order Service, then Kafka events coordinate payment, order-status updates, delivery creation, and simulated SMS/email notifications.
 
-## Architecture
-
-```mermaid
-flowchart LR
-    A[Client sends order] --> B[Order Service]
-    B --> C[Save order in order_db]
-    B --> D[Publish order-created event]
-    D --> E[Kafka Broker]
-
-    E --> F[Payment Service]
-    F --> G[Save payment in payment_db]
-    F --> H[Publish payment-success or payment-failed]
-
-    H --> I[Order Service updates status]
-    H --> J[Notification Service]
-
-    H --> K[Delivery Service]
-    K --> L[Save delivery in delivery_db]
-    K --> M[Publish delivery-created]
-    M --> J
-
-    J --> N[Send SMS / Email notification]
-```
-
-See [docs/architecture.md](docs/architecture.md) for the same diagram in a dedicated docs file.
-
-### Services
-
-| Service | Port | Responsibility | Database |
-| --- | ---: | --- | --- |
-| Order Service | `8081` | Validates and saves orders, publishes `ORDER_CREATED`, then updates order status from payment events. | `order_db` |
-| Payment Service | `8082` | Consumes new orders, simulates payment, saves payment results, and publishes success or failure. | `payment_db` |
-| Delivery Service | `8083` | Consumes successful payments, creates a delivery and tracking number, and publishes `DELIVERY_CREATED`. | `delivery_db` |
-| Notification Service | `8084` | Consumes payment and delivery events and prints simulated SMS/email messages to its console. | None |
-
-The databases and Kafka broker are shared infrastructure, but each service owns its own database/schema. Tables are created or updated by JPA (`spring.jpa.hibernate.ddl-auto=update`).
+The full-size HLD is in [docs/architecture.md](docs/architecture.md). Kafka topics and consumer groups are in [docs/kafka-topics-and-consumer-groups.md](docs/kafka-topics-and-consumer-groups.md), scenario screenshot instructions are in [docs/kafka-evidence-and-screenshots.md](docs/kafka-evidence-and-screenshots.md), and the live text proof captured from the broker is in [docs/kafka-live-proof.md](docs/kafka-live-proof.md).
 
 ## End-to-End Flow
 
 1. A client sends a valid JSON order to `POST http://localhost:8081/orders`.
 2. Order Service validates the required fields, sets status to `CREATED`, writes the row to `order_db.orders`, and publishes an `ORDER_CREATED` event to `order-created`. The Kafka key is the generated order ID.
-3. Payment Service consumes the event in group `payment-service-group`. It ignores an event whose event ID has already been recorded, then simulates payment:
+3. Order Service publishes each order event twice for the duplicate-message exercise. Payment Service consumes the event in group `payment-service-group`. It ignores an event whose event ID has already been recorded, then simulates payment:
    - Amount below `60000`: saves a successful payment and publishes to `payment-success`.
    - Amount `60000` or greater: saves a failed payment with reason `INSUFFICIENT_FUNDS` and publishes to `payment-failed`.
-   - Amount exactly `55555`: throws a deliberate test exception before saving payment or publishing an outcome; Kafka retries it twice after the initial attempt.
+  - Amount exactly `55555`: throws a deliberate test exception before saving payment or publishing an outcome; Kafka retries it twice after the initial attempt, then routes the failed record to `payment-success.DLT`.
 4. Order Service consumes the payment result and changes the order status to `PAID` or `PAYMENT_FAILED`.
 5. Notification Service consumes either payment result and prints simulated SMS and email output.
-6. For `payment-success` only, Delivery Service creates a row in `delivery_db.deliveries` with status `CREATED` and tracking number `TRK-<orderId>`, then publishes `DELIVERY_CREATED` to `delivery-created`.
-7. Notification Service consumes `delivery-created` and prints the tracking information and simulated notification output.
+6. For `payment-success` only, Delivery Service creates one row in `delivery_db.deliveries` with status `CREATED` and tracking number `TRK-<orderId>`, then publishes `DELIVERY_CREATED` to `delivery-created`.
+7. `PATCH /deliveries/{orderId}/status` advances delivery through `IN_TRANSIT`, `OUT_FOR_DELIVERY`, and `DELIVERED`, or to `CANCELLED` where allowed. Invalid and terminal transitions are rejected. Each accepted update is published to `delivery-created`; Order Service updates its order status and Notification Service prints a simulated message.
 
-Kafka uses the order ID as the message key so events for the same order use the same partition. Separate consumer groups allow Order, Delivery, and Notification services to each receive their own copy of a payment event.
+Kafka uses the order ID as the message key so events for the same order use the same partition. Separate consumer groups allow Order, Delivery, and Notification services to each receive their own copy of payment events. Payment retries use a two-second fixed delay and two retries after the first attempt.
 
-## Kafka Topics and Consumer Groups
+## Kafka Reference
 
-| Topic | Producer | Consumer group | Consumer |
-| --- | --- | --- | --- |
-| `order-created` | Order Service | `payment-service-group` | Payment Service |
-| `payment-success` | Payment Service | `order-service-payment-group` | Order Service |
-| `payment-success` | Payment Service | `delivery-service-group` | Delivery Service |
-| `payment-success` | Payment Service | `notification-payment-group` | Notification Service |
-| `payment-failed` | Payment Service | `order-service-payment-group` | Order Service |
-| `payment-failed` | Payment Service | `notification-payment-group` | Notification Service |
-| `delivery-created` | Delivery Service | `notification-service-group` | Notification Service |
-| `payment-success.DLT` | Not currently produced | None | Reserved topic only; dead-letter publishing is not configured |
-
-The configured setup uses three partitions and replication factor one. The DLT topic is included in the creation commands for demonstration, but the current retry handler does not route exhausted records to it.
+See [docs/kafka-topics-and-consumer-groups.md](docs/kafka-topics-and-consumer-groups.md) for the topic/group matrix, event contracts, partition and offset notes, and Kafka CLI commands.
 
 ## Prerequisites
 
@@ -91,20 +45,7 @@ Set the MySQL root password in the same PowerShell session used to start the ser
 $env:DB_PASSWORD = "your-mysql-root-password"
 ```
 
-Start Kafka and MySQL using your local installation. From your Kafka installation directory, create the topics:
-
-```powershell
-$topics = @("order-created", "payment-success", "payment-failed", "delivery-created", "payment-success.DLT")
-foreach ($topic in $topics) {
-  .\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --create --if-not-exists --topic $topic --partitions 3 --replication-factor 1
-}
-```
-
-Check that Kafka is reachable and the topics exist:
-
-```powershell
-.\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
-```
+Start Kafka and MySQL using your local installation. Create and inspect Kafka topics using the commands in [docs/kafka-topics-and-consumer-groups.md](docs/kafka-topics-and-consumer-groups.md).
 
 ## Start the Application
 
@@ -127,7 +68,7 @@ Run only one command per terminal; each command changes to its service directory
 
 ## Create and Test Orders
 
-The only HTTP endpoint currently implemented is `POST /orders`; there are no order, payment, or delivery read endpoints. The endpoint returns the generated order ID and initial status. Use PowerShell `Invoke-RestMethod` to send requests.
+`POST /orders` creates orders. `PATCH /deliveries/{orderId}/status` updates a created delivery. There are no order, payment, or delivery read endpoints. Use the included Postman collection or PowerShell `Invoke-RestMethod` to send requests.
 
 ### Successful payment and delivery
 
@@ -166,9 +107,9 @@ $body = @{
 Invoke-RestMethod -Method Post -Uri "http://localhost:8081/orders" -ContentType "application/json" -Body $body
 ```
 
-### Retry demonstration
+### Retry and DLT demonstration
 
-Send an order with `amount = 55555`. Payment Service deliberately throws before writing a payment row. Its `DefaultErrorHandler` waits two seconds and retries twice (three processing attempts total). No success/failure event, payment record, or delivery is expected for this test order. Dead-letter publishing is not configured.
+Send an order with `amount = 55555`. Payment Service deliberately throws before writing a payment row. Its `DefaultErrorHandler` waits two seconds and retries twice (three processing attempts total), then sends the record to `payment-success.DLT`. No payment outcome or delivery is expected for this test order.
 
 ```powershell
 $body = @{
@@ -207,15 +148,20 @@ Check consumer groups from the Kafka installation directory:
 
 Group IDs are created as consumers connect and process records, so the list may be empty or incomplete before the services have started.
 
+## Kafka Exploration
+
+The separate [Kafka topics and consumer-groups guide](docs/kafka-topics-and-consumer-groups.md) contains the topic matrix, CLI commands, scaling instructions, retry/duplicate exercises, and DLT inspection steps.
+
 ## Run Tests
 
-Each service is a separate Maven project; there is no root Maven aggregator. The current tests are Spring context-load smoke tests rather than full Kafka end-to-end tests. Run the commands from the repository root:
+Each service is a separate Maven project; there is no root Maven aggregator. Run the commands from the repository root:
 
 ```powershell
 Push-Location .\order-service; .\mvnw.cmd test; Pop-Location
 Push-Location .\payment-service; .\mvnw.cmd test; Pop-Location
 Push-Location .\delivery-service; mvn test; Pop-Location
 Push-Location .\notification-service; .\mvnw.cmd test; Pop-Location
+Push-Location .\delivery-service; mvn -Dtest=DeliveryStatusTest test; Pop-Location
 ```
 
 The test/application contexts may require the MySQL databases and Kafka settings to be available. For the full behavioral check, start Kafka, MySQL, and all four services, then run each of the three HTTP scenarios above and verify service logs and database rows.
@@ -227,4 +173,4 @@ The test/application contexts may require the MySQL databases and Kafka settings
 - **Order remains `CREATED`:** inspect Payment Service logs first, then check the `order-created` topic and consumer group offsets.
 - **No delivery or delivery notification:** only a `payment-success` event creates a delivery; failed and retry-test orders do not.
 - **Retry-test message:** `55555` is reserved to trigger retry behavior; use another amount below `60000` for the normal success path.
-- **DLT is empty:** expected with the current implementation; creating `payment-success.DLT` does not enable dead-letter routing by itself.
+- **DLT is empty:** confirm the payment listener exhausted all three attempts and that `payment-success.DLT` exists with at least one partition.

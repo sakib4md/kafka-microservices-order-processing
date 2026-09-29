@@ -5,8 +5,11 @@ import com.example.payment_service.dto.PaymentEvent;
 import com.example.payment_service.entity.Payment;
 import com.example.payment_service.kafka.producer.PaymentEventProducer;
 import com.example.payment_service.repository.PaymentRepository;
+import com.example.payment_service.repository.ProcessedEventRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import com.example.payment_service.entity.ProcessedEvent;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -14,13 +17,16 @@ import java.util.UUID;
 public class OrderCreatedConsumer {
 
     private final PaymentRepository paymentRepository;
+    private final ProcessedEventRepository processedEventRepository;
     private final PaymentEventProducer paymentEventProducer;
 
     public OrderCreatedConsumer(
             PaymentRepository paymentRepository,
+            ProcessedEventRepository processedEventRepository,
             PaymentEventProducer paymentEventProducer) {
 
         this.paymentRepository = paymentRepository;
+        this.processedEventRepository = processedEventRepository;
         this.paymentEventProducer = paymentEventProducer;
     }
 
@@ -28,9 +34,14 @@ public class OrderCreatedConsumer {
             topics = "order-created",
             groupId = "payment-service-group"
     )
+    @Transactional
     public void consumeOrderCreated(OrderCreatedEvent event) {
-
-        if (paymentRepository.existsByEventId(event.getEventId())) {
+        System.out.println("========== KAFKA EVENT DEBUG ==========");
+        System.out.println("Event ID: " + event.getEventId());
+        System.out.println("Event Type: " + event.getEventType());
+        System.out.println("Order ID: " + event.getOrderId());
+        System.out.println("=======================================");
+        if (processedEventRepository.existsByEventId(event.getEventId())) {
             System.out.println("Duplicate event ignored. Event ID: " + event.getEventId());
             return;
         }
@@ -68,19 +79,30 @@ public class OrderCreatedConsumer {
 
         paymentRepository.save(payment);
 
+
+        ProcessedEvent processedEvent = new ProcessedEvent(
+                event.getEventId(),
+                "ORDER_CREATED",
+                java.time.LocalDateTime.now()
+        );
+
+        processedEventRepository.save(processedEvent);
+
         System.out.println("Payment saved to database");
         System.out.println("Payment ID: " + paymentId);
         System.out.println("Payment Status: " + paymentStatus);
 
         // Create Kafka event
         PaymentEvent paymentEvent = new PaymentEvent(
-                event.getEventId(),
+                UUID.randomUUID().toString(),
                 paymentSuccess
                         ? "PAYMENT_SUCCESS"
                         : "PAYMENT_FAILED",
                 event.getOrderId(),
                 event.getCustomerId(),
                 event.getAmount(),
+                event.getDeliveryAddress(),
+                java.time.Instant.now().toString(),
                 paymentId,
                 paymentMethod,
                 paymentStatus,

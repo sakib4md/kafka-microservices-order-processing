@@ -2,7 +2,7 @@ package com.example.orderservice.dto;
 
 public class PaymentEvent {
 
-    private Long eventId;
+    private String eventId;
     private String eventType;
     private Long orderId;
     private Long customerId;
@@ -15,11 +15,11 @@ public class PaymentEvent {
     public PaymentEvent() {
     }
 
-    public Long getEventId() {
+    public String getEventId() {
         return eventId;
     }
 
-    public void setEventId(Long eventId) {
+    public void setEventId(String eventId) {
         this.eventId = eventId;
     }
 

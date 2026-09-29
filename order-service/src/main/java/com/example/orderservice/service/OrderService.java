@@ -1,5 +1,6 @@
 package com.example.orderservice.service;
 
+import java.util.UUID;
 import com.example.orderservice.dto.OrderCreatedEvent;
 import com.example.orderservice.dto.OrderResponse;
 import com.example.orderservice.entity.Order;
@@ -8,6 +9,7 @@ import com.example.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -33,7 +35,7 @@ public class OrderService {
 
         // 3. Create Kafka event
         OrderCreatedEvent event = new OrderCreatedEvent(
-                savedOrder.getId(),
+                UUID.randomUUID().toString(),
                 "ORDER_CREATED",
                 savedOrder.getId(),
                 savedOrder.getCustomerId(),
@@ -44,6 +46,7 @@ public class OrderService {
 
         // 4. Publish event to Kafka
         orderEventProducer.publishOrderCreated(event);
+        orderEventProducer.publishOrderCreated(event); // TEST DUPLICATE
 
         // 5. Return clean response
         return new OrderResponse(

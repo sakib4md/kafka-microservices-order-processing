@@ -2,21 +2,23 @@ package com.example.notification_service.dto;
 
 public class DeliveryCreatedEvent {
 
-    private Long eventId;
+    private String eventId;
     private String eventType;
     private Long orderId;
     private Long customerId;
+    private String deliveryAddress;
     private String trackingNumber;
-    private String status;
+    private String deliveryStatus;
+    private String eventTime;
 
     public DeliveryCreatedEvent() {
     }
 
-    public Long getEventId() {
+    public String getEventId() {
         return eventId;
     }
 
-    public void setEventId(Long eventId) {
+    public void setEventId(String eventId) {
         this.eventId = eventId;
     }
 
@@ -44,6 +46,14 @@ public class DeliveryCreatedEvent {
         this.customerId = customerId;
     }
 
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public void setDeliveryAddress(String deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }
+
     public String getTrackingNumber() {
         return trackingNumber;
     }
@@ -52,11 +62,19 @@ public class DeliveryCreatedEvent {
         this.trackingNumber = trackingNumber;
     }
 
-    public String getStatus() {
-        return status;
+    public String getDeliveryStatus() {
+        return deliveryStatus;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+    public String getEventTime() {
+        return eventTime;
+    }
+
+    public void setEventTime(String eventTime) {
+        this.eventTime = eventTime;
     }
 }

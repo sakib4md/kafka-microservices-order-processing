@@ -2,11 +2,13 @@ package com.example.notification_service.dto;
 
 public class PaymentEvent {
 
-    private Long eventId;
+    private String eventId;
     private String eventType;
     private Long orderId;
     private Long customerId;
     private Double amount;
+    private String deliveryAddress;
+    private String eventTime;
     private String paymentId;
     private String paymentMethod;
     private String paymentStatus;
@@ -15,7 +17,7 @@ public class PaymentEvent {
     public PaymentEvent() {
     }
 
-    public Long getEventId() {
+    public String getEventId() {
         return eventId;
     }
 
@@ -35,6 +37,14 @@ public class PaymentEvent {
         return amount;
     }
 
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public String getEventTime() {
+        return eventTime;
+    }
+
     public String getPaymentId() {
         return paymentId;
     }
@@ -51,7 +61,7 @@ public class PaymentEvent {
         return reason;
     }
 
-    public void setEventId(Long eventId) {
+    public void setEventId(String eventId) {
         this.eventId = eventId;
     }
 
@@ -69,6 +79,14 @@ public class PaymentEvent {
 
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+
+    public void setDeliveryAddress(String deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }
+
+    public void setEventTime(String eventTime) {
+        this.eventTime = eventTime;
     }
 
     public void setPaymentId(String paymentId) {

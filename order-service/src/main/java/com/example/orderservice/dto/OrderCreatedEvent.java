@@ -2,7 +2,7 @@ package com.example.orderservice.dto;
 
 public class OrderCreatedEvent {
 
-    private Long eventId;
+    private String eventId;
     private String eventType;
     private Long orderId;
     private Long customerId;
@@ -14,7 +14,7 @@ public class OrderCreatedEvent {
     }
 
     public OrderCreatedEvent(
-            Long eventId,
+            String eventId,
             String eventType,
             Long orderId,
             Long customerId,
@@ -31,7 +31,9 @@ public class OrderCreatedEvent {
         this.eventTime = eventTime;
     }
 
-    public Long getEventId() {
+
+
+    public String getEventId() {
         return eventId;
     }
 

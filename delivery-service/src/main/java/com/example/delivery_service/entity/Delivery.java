@@ -10,8 +10,10 @@ public class Delivery {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private Long orderId;
     private Long customerId;
+    private String deliveryAddress;
     private String trackingNumber;
     private String status;
 
@@ -36,6 +38,14 @@ public class Delivery {
 
     public void setCustomerId(Long customerId) {
         this.customerId = customerId;
+    }
+
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public void setDeliveryAddress(String deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
     }
 
     public String getTrackingNumber() {

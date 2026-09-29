@@ -11,7 +11,7 @@ public class Payment {
     private Long id;
 
     @Column(unique = true)
-    private Long eventId;
+    private String eventId;
 
     private String paymentId;
 
@@ -90,11 +90,11 @@ public class Payment {
         this.reason = reason;
     }
 
-    public Long getEventId() {
+    public String getEventId() {
         return eventId;
     }
 
-    public void setEventId(Long eventId) {
+    public void setEventId(String eventId) {
         this.eventId = eventId;
     }
 }

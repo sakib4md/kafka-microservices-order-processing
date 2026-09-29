@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kafka Broker Snapshot - 2026-09-29</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", sans-serif; color: #17232f; background: #edf2f5; }
+    body { margin: 0; padding: 32px; }
+    main { max-width: 1240px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    h2 { margin: 0 0 16px; font-size: 21px; }
+    p { line-height: 1.5; }
+    .sub { margin: 0 0 24px; color: #526273; }
+    .banner { padding: 16px 20px; border-left: 5px solid #bf6a19; background: #fff3df; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    section { background: #fff; border: 1px solid #d5dde3; border-radius: 6px; padding: 20px; }
+    .wide { grid-column: 1 / -1; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e3e8ec; }
+    th { background: #f4f7f9; }
+    code, pre { font-family: Consolas, monospace; }
+    pre { overflow-wrap: anywhere; white-space: pre-wrap; background: #f4f7f9; padding: 14px; border-radius: 4px; }
+    .status { display: inline-block; padding: 3px 8px; border-radius: 3px; font-weight: 600; background: #fff0d6; color: #70400a; }
+    .note { color: #526273; font-size: 14px; }
+    @media (max-width: 760px) { body { padding: 16px; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Kafka Broker Snapshot</h1>
+    <p class="sub">Live broker metadata queried on 2026-09-29 from Docker container <code>kafka</code> (Apache Kafka 3.9.0, bootstrap <code>localhost:9092</code>).</p>
+    <div class="banner"><strong>Current limitation:</strong> the broker is a single node. Project topics have replication factor 1 and ISR 1. Replicated ISR evidence requires at least three brokers and topics created with replication factor 3.</div>
+    <div class="grid">
+      <section>
+        <h2>Required Project Topics</h2>
+        <table>
+          <thead><tr><th>Topic</th><th>Partitions</th><th>RF</th><th>Leader</th><th>ISR</th></tr></thead>
+          <tbody>
+            <tr><td><code>order-created</code></td><td>3</td><td>1</td><td>1</td><td>1 / 1</td></tr>
+            <tr><td><code>payment-success</code></td><td>3</td><td>1</td><td>1</td><td>1 / 1</td></tr>
+            <tr><td><code>payment-failed</code></td><td>3</td><td>1</td><td>1</td><td>1 / 1</td></tr>
+            <tr><td><code>delivery-created</code></td><td>3</td><td>1</td><td>1</td><td>1 / 1</td></tr>
+            <tr><td><code>payment-success.DLT</code></td><td>3</td><td>1</td><td>1</td><td>1 / 1</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Each partition reports broker 1 as leader, its only replica, and its only in-sync replica.</p>
+      </section>
+      <section>
+        <h2>Current Consumer Groups</h2>
+        <pre>order-consumer-group
+notification-payment-group
+payment-service-group
+notification-service-group
+order-service-payment-group
+delivery-service-group</pre>
+        <p><span class="status">No active members</span> for <code>payment-service-group</code> at capture time.</p>
+        <p class="note">Its order-created offsets were 37, 6, and 5 for partitions 0, 1, and 2. Each matched the log-end offset (lag 0).</p>
+      </section>
+      <section class="wide">
+        <h2>Message and Application Scenario Status</h2>
+        <p>Temporary console consumers returned zero records within the three-second capture window for <code>order-created</code>, <code>payment-success</code>, <code>payment-failed</code>, and <code>delivery-created</code>. The microservices were not running during this snapshot.</p>
+        <p>Therefore this image is authentic broker metadata, not a successful/failure/retry scenario screenshot. Capture application-flow evidence after starting all four services with the local <code>DB_PASSWORD</code>; follow the scenario checklist in <code>docs/kafka-evidence-and-screenshots.md</code>.</p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
