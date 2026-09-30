@@ -46,7 +46,7 @@ public class OrderService {
 
         // 4. Publish event to Kafka
         orderEventProducer.publishOrderCreated(event);
-        orderEventProducer.publishOrderCreated(event); // TEST DUPLICATE
+        //orderEventProducer.publishOrderCreated(event); // TEST DUPLICATE
 
         // 5. Return clean response
         return new OrderResponse(
